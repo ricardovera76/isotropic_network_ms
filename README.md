@@ -1,2 +1,2 @@
 # isotropic_network_ms
-Istropic Networks's Microservice Project
+Isotropic Networks's Microservice Project
