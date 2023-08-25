@@ -3,3 +3,4 @@ venv
 .vscode
 *.txt
 *.json
+!requirements.txt
