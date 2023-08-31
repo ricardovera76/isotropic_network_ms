@@ -1,75 +1,65 @@
-import matplotlib.pyplot as plt
 import json
-import requests
-import os
+import matplotlib.pyplot as plt
+from helpers.apps_names import applications
 from datetime import datetime
+from helpers.cache_compare import cache_diff
+from helpers.flow_parser import flow_parser
+from helpers.get_users_data import get_users
+from helpers.get_pkt_data import get_pkt
+
 
 APP_FILE = "applications.json"
 URL = "https://informatics.netify.ai/api/v2/lookup/applications"
-INTERVAL = 15
-
-
-def unix_to_date(unix_time_ms):
-    timestamp_in_milliseconds = unix_time_ms
-    timestamp_in_seconds = timestamp_in_milliseconds / 1000
-    normal_date = datetime.utcfromtimestamp(timestamp_in_seconds).strftime(
-        "%Y-%m-%d_%H:%M:%S"
-    )
-    return normal_date
-
 
 def parse_data_stream():
     source_file = "/tmp/out.json"
+    cache_file = "/tmp/cache.json"
+    diff_file = "/tmp/diff.json"
 
-    app_list = applications()
+    app_list = applications(APP_FILE, URL)
 
-    interval = 0
-    interval_bytes_dn = 0
-    interval_bytes_up = 0
-    first_seen = 0
-    last_seen = 0
-    total_bytes_dn = 0
-    total_bytes_up = 0
-    mapping = {}
-    parent = {}
-    bps_dn = []
-    bps_up = []
-    parent["netify.established"] = {
-        "label": "Established",
-        "bytes_dn": 0,
-        "bytes_up": 0,
-    }
-    response = []
+    digest_lst_all = []
 
-    with open(source_file) as file:
-        for line in file:
-            print(line)
-            
-        return "response"
+    # get diff of data streams [✅]
+    cache_diff(cache_file, source_file, diff_file)
 
+    # get all digests (uniques) [✅]
+    with open(diff_file) as file:
+        digest_lst_all = [
+            json.loads(line)["flow"]["digest"]
+            for line in file
+            if json.loads(line).get("flow") is not None
+        ]
+    unique_digests = []
+    [
+        unique_digests.append(item)
+        for item in digest_lst_all
+        if item not in unique_digests
+    ]
 
-def applications():
-    app_dict = {}
-    # Get cached file
-    if os.path.exists(APP_FILE):
-        with open(APP_FILE) as localfile:
-            data = json.load(localfile)
-    else:
-        params = {
-            "settings_data_format": "objects",
-            "settings_limit": 5000,
+    # get all flows and flows_st_pr [✅]
+    dig_flow_app = flow_parser(diff_file, unique_digests, "flow")
+    dig_flow_pkt = flow_parser(diff_file, unique_digests, "st_pr")
+
+    # get unique list of users [✅]
+    # within all those digests get unique mac and ip [✅]
+    users_list = get_users(dig_flow_app, app_list)
+    users = [
+        {
+            f"{user['mac']}": user
         }
-        headers = {
-            "content-type": "application/json",
+        for user in users_list
+    ]
+
+    # get unique list of packets flows [✅]
+    # within all those digests get the packets and bytes [✅]
+    # within all those digests get app [✅]
+    pkt_list = get_pkt(dig_flow_pkt)
+    pkts = [
+        {
+            f'{pkt["digest"]}':pkt
         }
-        response = requests.get(URL, data=json.dumps(params), headers=headers)
-        # Save to cache
-        print(response.json()["data"])
-        with open(APP_FILE, mode="w") as localfile:
-            json.dump(response.json()["data"], localfile)
-        data = response.json()["data"]
-    for application in data:
-        app_dict[application["id"]] = application
+        for pkt in pkt_list
+    ]
 
-    return app_dict
-
+    return (users, pkts)
