@@ -1,6 +1,6 @@
 import time
 import threading
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from helpers.worker import worker
 from helpers.redis_connection import redis_db
 import json
@@ -11,13 +11,10 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    """The index route."""
-    # get newly updated data from redis [✅]
-    # Retrieve all keys (hashes) from Redis [✅]
     all_hashes = redis_db.keys("*")
     users = [hashes for hashes in all_hashes if len(hashes) <= MAC_ADDR_LEN]
     user_list = []
-    # make correlation [✅]
+    
     for user_hash in users:
         user = json.loads(redis_db.hget(user_hash, "data"))
         user["applications"] = []
@@ -26,9 +23,6 @@ def index():
             appl = json.loads(appl)
             user["applications"].append(appl)
         user_list.append(user)
-    # print(user_list)
-    # return (user_list)
-    
     return jsonify(user_list)
 
 
@@ -36,7 +30,6 @@ class WorkerThread(threading.Thread):
     def run(self):
         while True:
             worker()
-            print("worker thread")
             time.sleep(15)
 
 

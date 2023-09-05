@@ -29,6 +29,6 @@ def get_users(dig_flow_app, app_list):
     result_list = list(result_dict.values())
     for result in result_list:
         result['device_name'] = get_device_name(result['ip'])
-        result['device_vendor'] = get_device_name(result['mac'])
+        result['device_vendor'] = get_vendor(result['mac'])
         
     return result_list

@@ -4,7 +4,6 @@ import os
 
 
 def applications(APP_FILE,URL):
-    # Get cached file
     if os.path.exists(APP_FILE):
         with open(APP_FILE) as localfile:
             data = json.load(localfile)

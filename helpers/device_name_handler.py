@@ -7,5 +7,3 @@ def get_device_name(ip_address):
     except (socket.gaierror, socket.herror, socket.error):
         return "Unknown"
 
-# ... rest of your code ...
-

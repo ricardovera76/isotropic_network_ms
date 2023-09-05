@@ -1,7 +1,6 @@
 import json
 
 def cache_diff(cache_file, stream_file, diff_file):
-    # Read the contents of the old and new files
     with open(cache_file, 'r') as file1:
         file1_data = file1.read()
 
