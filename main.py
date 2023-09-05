@@ -26,6 +26,17 @@ def index():
     return jsonify(user_list)
 
 
+@app.route('/<string:mac>', methods=['GET'])
+def get_user_data(mac_addr):
+    user = json.loads(redis_db.hget(mac_addr, "data"))
+    user["applications"] = []
+    for app in user["apps"]:
+        appl = redis_db.hget(app[0], "data")
+        appl = json.loads(appl)
+        user["applications"].append(appl)
+    return jsonify(user)
+
+
 class WorkerThread(threading.Thread):
     def run(self):
         while True:
