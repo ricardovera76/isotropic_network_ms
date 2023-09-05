@@ -75,9 +75,13 @@ to start again:
 ```bash
 sudo systemctl start netifyd.service && sudo nc -U /var/run/netifyd/netifyd.sock
 ```
-
 ### 2. Start APP
 Once the daemon is started wait 15 seconds to let it retrieve the first streams of packets in the network, then run the app by:
+First run the redis container in a terminal window
+```bash
+docker-compose up -d && docker exec -it redis redis-cli
+```
+Then run the Main APP in another terminal window
 ```bash
 python main.py
 ```
