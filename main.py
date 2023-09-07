@@ -26,9 +26,10 @@ def index():
     return jsonify(user_list)
 
 
-@app.route('/<string:mac>', methods=['GET'])
-def get_user_data(mac_addr):
-    user = json.loads(redis_db.hget(mac_addr, "data"))
+@app.route('/<path:mac>', methods=['GET'])
+def get_user_data(mac):
+    mac = mac.replace('-', ':')
+    user = json.loads(redis_db.hget(mac, "data"))
     user["applications"] = []
     for app in user["apps"]:
         appl = redis_db.hget(app[0], "data")
