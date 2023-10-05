@@ -49,10 +49,10 @@ class WorkerThread(threading.Thread):
     def run(self):
         print("[info] : worker thread running...")
         while True:
+            time.sleep(15)
             uuid = int(time.time())
             out_file = tcp_json_parser(uuid)
             worker(out_file)
-            time.sleep(15)
 
 
 class ParserThread(threading.Thread):
