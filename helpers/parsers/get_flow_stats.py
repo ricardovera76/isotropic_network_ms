@@ -1,4 +1,8 @@
-def get_pkt(dig_flow_pkt):
+def get_stats(dig_flow_pkt):
+    """
+    @param dig_flow_pkt (list[dicts])   : list of dictionaries of all flows pkts with type === "flow_stats" or "flow_purge"
+    @return pkts         (list[dicts])   : list of dictionaries of all pkts statistics
+    """
     pkt_flows = []
     [
         pkt_flows.append({
@@ -10,6 +14,8 @@ def get_pkt(dig_flow_pkt):
             "ttl_pkts": pkt_flow["flow"]["total_packets"],
             "local_pkts": pkt_flow["flow"]["local_packets"],
             "other_pkts": pkt_flow["flow"]["other_packets"],
+            "local_rate": pkt_flow["flow"]["local_rate"],
+            "other_rate": pkt_flow["flow"]["other_rate"],
         })
         for pkt_flow in dig_flow_pkt
     ]
@@ -17,16 +23,18 @@ def get_pkt(dig_flow_pkt):
 
     for item in pkt_flows:
         digest = item['digest']
-        
         if digest in consolidated_data:
             consolidated_item = consolidated_data[digest]
-            consolidated_item['bytes_ttl'] += item['ttl_bytes']
-            consolidated_item['bytes_up'] += item['local_bytes']
-            consolidated_item['bytes_dn'] += item['other_bytes']
-            consolidated_item['pkts_ttl'] += item['ttl_pkts']
-            consolidated_item['pkts_up'] += item['local_pkts']
-            consolidated_item['pkts_dn'] += item['other_pkts']
-            consolidated_item['last_seen'] = item['last_seen']
+            consolidated_item['bytes_ttl'] = item['ttl_bytes']
+            consolidated_item['bytes_up'] = item['local_bytes']
+            consolidated_item['bytes_dn'] = item['other_bytes']
+            consolidated_item['pkts_ttl'] = item['ttl_pkts']
+            consolidated_item['pkts_up'] = item['local_pkts']
+            consolidated_item['pkts_dn'] = item['other_pkts']
+            if item["last_seen"] > consolidated_data[digest]["last_seen"]:
+                consolidated_item['last_seen'] = item['last_seen']
+                consolidated_item['rate_up'] = item['local_rate']
+                consolidated_item['rate_down'] = item['other_rate']
         else:
             consolidated_data[digest] = {
                 'digest': digest,
@@ -37,6 +45,7 @@ def get_pkt(dig_flow_pkt):
                 'pkts_ttl': item['ttl_pkts'],
                 'pkts_up': item['local_pkts'],
                 'pkts_dn': item['other_pkts'],
+                'rate_up': item['local_rate'],
+                'rate_dn': item['other_rate'],
             }
-    
     return list(consolidated_data.values())
