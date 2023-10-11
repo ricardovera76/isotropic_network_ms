@@ -3,9 +3,9 @@ from scripts.redis_connection import redis_db
 from helpers.constants.definitions import MAC_ADDR_LEN
 
 
-def get_usr_trf_recent(target_mac):
+def device_recent_trf(target_mac):
     """
-    @param target_mac (string)          : mac address of user to get recent traffic per-app
+    @param target_mac (string)          : mac address of device to get recent traffic per-app
 
     @return app_list (list[dict])       : list of all app inf with traffic as a dictionary
     """

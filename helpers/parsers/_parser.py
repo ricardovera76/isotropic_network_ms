@@ -16,8 +16,6 @@ def parse_data_stream(source_file):
     cache_file = f"{DIR_FILE}cache.json"
     diff_file = f"{DIR_FILE}diff.json"
 
-    app_list = applications(APP_FILE, URL)
-
     digest_lst_all = []
 
     cache_diff(cache_file, source_file, diff_file)

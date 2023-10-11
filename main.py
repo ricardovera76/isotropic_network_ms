@@ -3,47 +3,70 @@ import threading
 from flask import Flask, jsonify
 from helpers.constants.definitions import MAC_ADDR_LEN
 from helpers.parsers.tcp_to_json_parser import tcp_json_parser
-from scripts.get_histogram_traffic import get_usr_histogram_trf
-from scripts.get_recent_traffic import get_usr_trf_recent
-from scripts.get_user import get_usr_data
+from scripts.app_histogram import app_history
+from scripts.app_traffic import app_trf
+from scripts.apps_traffic import apps_trf
+from scripts.device_data import device_data
+from scripts.device_histogram import device_histogram
+from scripts.device_traffic import device_recent_trf
 from scripts.redis_connection import redis_db
+from scripts.sys_traffic import system_trf
 from scripts.tcp_parser import tcp_parser
 from scripts.worker import worker
 
 app = Flask(__name__)
 
 
-@app.route("/")
-def index():
+@app.route("/devices")
+def get_all_current_devices():
     all_hashes = redis_db.keys("*")
-    users = [hashes for hashes in all_hashes if len(hashes) <= MAC_ADDR_LEN]
-    user_list = []
+    devices = [hashes for hashes in all_hashes if len(hashes) <= MAC_ADDR_LEN]
+    device_list = []
 
-    for user_mac in users:
-        user = get_usr_data(user_mac)
-        usr_trf = get_usr_trf_recent(user_mac)
-        user["apps"] = usr_trf
-        user_list.append(user)
-    return jsonify(user_list)
+    for device_mac in devices:
+        device = device_data(device_mac)
+        usr_trf = device_recent_trf(device_mac)
+        device["apps"] = usr_trf
+        device_list.append(device)
+    return jsonify(device_list)
 
 
-@app.route("/<path:mac>", methods=["GET"])
-def get_user_by_mac(mac):
+@app.route("/device/<path:mac>", methods=["GET"])
+def get_device_by_mac(mac):
     mac = mac.replace("-", ":")
-    user = get_usr_data(mac)
-    usr_trf = get_usr_trf_recent(mac)
-    user["apps"] = usr_trf
-    return jsonify(user)
+    device = device_data(mac)
+    dev_trf = device_recent_trf(mac)
+    device["apps"] = dev_trf
+    return jsonify(device)
 
 
-@app.route("/<path:mac>/history", methods=["GET"])
+@app.route("/device/<path:mac>/history", methods=["GET"])
 def get_user_history_by_mac(mac):
     mac = mac.replace("-", ":")
-    user = get_usr_data(mac)
-    usr_trf = get_usr_histogram_trf(mac)
-    user["apps"] = usr_trf
-    return jsonify(user)
+    device = device_data(mac)
+    dev_trf = device_histogram(mac)
+    device["apps"] = dev_trf
+    return jsonify(device)
 
+@app.route("/apps", methods=["GET"])
+def get_top_apps():
+    data = apps_trf()
+    return jsonify(data)
+
+@app.route("/app/<path:app_name>", methods=["GET"])
+def get_app_top_data(app_name):
+    app = app_trf(app_name)
+    return jsonify(app)
+
+@app.route("/app/<path:app_name>/history", methods=["GET"])
+def get_app_histogram(app_name):
+    app = app_history(app_name)
+    return jsonify(app)
+
+@app.route("/system", methods=["GET"])
+def get_sys_rate():
+    sys_rate = system_trf()
+    return jsonify(sys_rate)
 
 class WorkerThread(threading.Thread):
     def run(self):
@@ -72,5 +95,5 @@ if __name__ == "__main__":
         host="localhost",
         port=6000,
         debug=True,
-        use_reloader=False,
+        use_reloader=True,
     )

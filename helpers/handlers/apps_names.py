@@ -22,3 +22,10 @@ def applications(APP_FILE,URL):
         data = response.json()["data"]
 
     return data
+
+def get_app_name(apps_list, dump_name):
+    response = "unknown"
+    for app in apps_list:
+        if dump_name == app['tag']:
+            response = app["label"].replace(" ", "_").lower()
+    return response
