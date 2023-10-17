@@ -1,7 +1,5 @@
 import json
 from scripts.redis_connection import redis_db
-from helpers.constants.definitions import MAC_ADDR_LEN
-
 
 def device_histogram(target_mac):
     """
@@ -10,10 +8,10 @@ def device_histogram(target_mac):
     @return app_list (list[dict])       : list of all app info with traffic as a dictionary
     """
 
-    all_digests = [data for data in redis_db.keys("*") if len(data) > MAC_ADDR_LEN]
+    all_digests = redis_db.keys("pkt:*")
 
     return [
-        json.loads(redis_db.hget(digest, "data"))
+        redis_db.hgetall(digest)
         for digest in all_digests
-        if target_mac == json.loads(redis_db.hget(digest, "data"))["mac_addr"]
+        if target_mac == redis_db.hgetall(digest)["mac_addr"]
     ]

@@ -2,7 +2,7 @@ import os
 import time
 import threading
 from flask import Flask, jsonify
-from helpers.constants.definitions import MAC_ADDR_LEN
+from helpers.constants.definitions import MAC_ADDR_START
 from helpers.parsers.tcp_to_json_parser import tcp_json_parser
 from scripts.app_histogram import app_history
 from scripts.app_traffic import app_trf
@@ -20,13 +20,11 @@ app = Flask(__name__)
 
 @app.route("/devices")
 def get_all_current_devices():
-    all_hashes = redis_db.keys("*")
-    devices = [hashes for hashes in all_hashes if len(hashes) <= MAC_ADDR_LEN]
     device_list = []
-
+    devices = redis_db.keys("device:*")
     for device_mac in devices:
-        device = device_data(device_mac)
-        usr_trf = device_recent_trf(device_mac)
+        device = device_data(device_mac[MAC_ADDR_START:])
+        usr_trf = device_recent_trf(device_mac[MAC_ADDR_START:])
         device["apps"] = usr_trf
         device_list.append(device)
     return jsonify(device_list)
