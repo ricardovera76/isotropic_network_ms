@@ -9,7 +9,6 @@ def worker(out_file):
     @param out_file (str)    : name of output file after tcp parser
     """
     (users, pkts) = parse_data_stream(out_file)
-    os.remove(out_file)
     for user in users:
         for hash_key, data in user.items():
             existing_user = redis_db.hget(hash_key, "data")

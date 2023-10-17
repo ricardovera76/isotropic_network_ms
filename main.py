@@ -1,3 +1,4 @@
+import os
 import time
 import threading
 from flask import Flask, jsonify
@@ -76,6 +77,7 @@ class WorkerThread(threading.Thread):
             uuid = int(time.time())
             out_file = tcp_json_parser(uuid)
             worker(out_file)
+            os.remove(out_file)
 
 
 class ParserThread(threading.Thread):
@@ -90,10 +92,11 @@ if __name__ == "__main__":
     th1 = WorkerThread()
     th2 = ParserThread()
     th1.start()
-    th2.start()
+    # th2.start()
     app.run(
         host="localhost",
         port=6000,
         debug=True,
-        use_reloader=True,
+        use_reloader=False
+        ,
     )
