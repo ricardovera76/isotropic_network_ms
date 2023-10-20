@@ -1,3 +1,4 @@
+import json
 from scripts.redis_connection import redis_db
 
 
@@ -7,23 +8,21 @@ def device_recent_trf(target_mac):
 
     @return app_list (list[dict])       : list of all app inf with traffic as a dictionary
     """
-    # Initialize an empty list to store matching hash keys
-    # Dictionary to store the most recent digest object for each app_name
-    app_last_seen = {}  # {"netify.x_app_name":123456789 (unix of last time of app)}
+    app_list = {}
+     # list to store the app data sorted by the "last_seen" field
+    app_data = []
+    # Retrieve all keys matching the pattern "app:*:<target_mac>" from Redis
+    all_apps = redis_db.keys(f"app:*:{target_mac}")
 
-    all_digests = redis_db.keys("pkt:*")
+    for app_key in all_apps:
+        app_data_dict = json.loads(redis_db.get(app_key))[0]
+        app_data_dict["app_name"] = app_key.split(":")[1]  # Extract the app name
+        app_data.append(app_data_dict)
 
-    for digest in all_digests:
-        # print(digest)
-        current_digest = redis_db.hgetall(digest)
-        if target_mac == current_digest["mac_addr"]:
-            # Check if the app_name is repeated and compare last seen timestamp, get most recent traffic for a given app
-            app_name = current_digest["app_name"]
-            last_seen = int(current_digest["last_seen"])
-            if app_name in app_last_seen:
-                if last_seen > int(app_last_seen[app_name]["last_seen"]):
-                    app_last_seen[app_name] = current_digest
-            else:
-                app_last_seen[app_name] = current_digest
+    app_data.sort(key=lambda x: x.get("last_seen", 0), reverse=True)
 
-    return list(app_last_seen.values())
+    for app_info in app_data:
+        app_name = app_info["app_name"]
+        app_list[app_name] = app_info
+
+    return list(app_list.values())

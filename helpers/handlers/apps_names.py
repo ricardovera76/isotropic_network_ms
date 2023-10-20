@@ -29,3 +29,10 @@ def get_app_name(apps_list, dump_name):
         if dump_name == app['tag']:
             response = app["label"].replace(" ", "_").lower()
     return response
+
+def get_technical_app_name(apps_list, dump_name):
+    response = "Unknown"
+    for app in apps_list:
+        if dump_name == app['label'].replace(" ", "_").lower():
+            response = app["tag"]
+    return response

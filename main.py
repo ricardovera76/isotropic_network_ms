@@ -4,11 +4,8 @@ import threading
 from flask import Flask, jsonify
 from helpers.constants.definitions import MAC_ADDR_START
 from helpers.parsers.tcp_to_json_parser import tcp_json_parser
-from scripts.app_histogram import app_history
-from scripts.app_traffic import app_trf
 from scripts.apps_traffic import apps_trf
 from scripts.device_data import device_data
-from scripts.device_histogram import device_histogram
 from scripts.device_traffic import device_recent_trf
 from scripts.redis_connection import redis_db
 from scripts.sys_traffic import system_trf
@@ -39,33 +36,23 @@ def get_device_by_mac(mac):
     return jsonify(device)
 
 
-@app.route("/device/<path:mac>/history", methods=["GET"])
-def get_user_history_by_mac(mac):
-    mac = mac.replace("-", ":")
-    device = device_data(mac)
-    dev_trf = device_histogram(mac)
-    device["apps"] = dev_trf
-    return jsonify(device)
-
 @app.route("/apps", methods=["GET"])
 def get_top_apps():
-    data = apps_trf()
+    data = apps_trf("")
     return jsonify(data)
+
 
 @app.route("/app/<path:app_name>", methods=["GET"])
 def get_app_top_data(app_name):
-    app = app_trf(app_name)
+    app = apps_trf(app_name)
     return jsonify(app)
 
-@app.route("/app/<path:app_name>/history", methods=["GET"])
-def get_app_histogram(app_name):
-    app = app_history(app_name)
-    return jsonify(app)
 
 @app.route("/system", methods=["GET"])
 def get_sys_rate():
     sys_rate = system_trf()
     return jsonify(sys_rate)
+
 
 class WorkerThread(threading.Thread):
     def run(self):
@@ -95,6 +82,5 @@ if __name__ == "__main__":
         host="localhost",
         port=6000,
         debug=True,
-        use_reloader=False
-        ,
+        use_reloader=False,
     )

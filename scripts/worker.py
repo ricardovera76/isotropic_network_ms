@@ -1,5 +1,4 @@
 import json
-import os
 from helpers.parsers._parser import parse_data_stream
 from scripts.redis_connection import redis_db
 
@@ -15,19 +14,31 @@ def worker(out_file):
             if device_exist:
                 continue
             else:
-                redis_db.hmset(f"device:{str(hash_key)}",data)
+                redis_db.hmset(f"device:{str(hash_key)}", data)
 
+    repeated_apps = {}
     for pkt in pkts:
         for hash_key, data in pkt.items():
-            pkt_exists = redis_db.exists(f"pkt:{str(hash_key)}")
-            # if pkt_exists:
-                # pkts_up_old = redis_db.hmget(f"pkt:{str(hash_key)}", "pkts_up")
-                # pkts_dn_old = redis_db.hmget(f"pkt:{str(hash_key)}", "pkts_dn")
-                # pkts_ttl_old = redis_db.hmget(f"pkt:{str(hash_key)}", "pkts_ttl")
-                # data["pkts_ttl"] = str(int(data["pkts_ttl"]) + int(pkts_ttl_old))
-                # data["pkts_up"] = str(int(data["pkts_up"]) + int(pkts_up_old))
-                # data["pkts_dn"] = str(int(data["pkts_dn"]) + int(pkts_dn_old))
+            app_name = data["app_name"]
+            mac = data["mac_addr"]
+            mac_data = {
+                "rate_up": data["rate_up"],
+                "rate_dn": data["rate_dn"],
+                "rate_ttl": float(data["rate_up"]) + float(data["rate_dn"]),
+                "last_seen": data["last_seen"],
+            }
+            if app_name not in repeated_apps:
+                repeated_apps[app_name] = {
+                    "app_name": app_name,
+                    "mac_list": {f"{mac}": [mac_data]},
+                }
 
-            redis_db.hmset(f"pkt:{str(hash_key)}", data)
+            if mac not in repeated_apps[app_name]["mac_list"]:
+                repeated_apps[app_name]["mac_list"][mac] = [mac_data]
+                
+    for app_name, app_data in repeated_apps.items():
+        for mac, mac_data in app_data["mac_list"].items():
+            redis_key = f"app:{app_name}:{mac}"
+            redis_db.set(redis_key, json.dumps(mac_data))
 
-    print("data stream stored!")
+    print("[info] : data stream stored!")

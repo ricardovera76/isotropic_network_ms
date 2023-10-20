@@ -21,3 +21,6 @@ def cache_diff(cache_file, stream_file, diff_file):
 
     for updated_obj in updated_objects:
         print(json.dumps(updated_obj), file=open(diff_file, "a"))
+        
+    # update cache file
+    print(file2_data, file=open(cache_file, "w"))

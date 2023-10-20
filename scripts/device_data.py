@@ -25,5 +25,5 @@ def device_data(mac):
     device["rate_up"] = device_up_rate
     device["rate_dn"] = device_dn_rate
     device["rate_ttl"] = device_ttl_rate
-    device["last_seen"] = int(device_last_seen)//1000
+    device["last_seen"] = int(device_last_seen)
     return device

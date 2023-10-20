@@ -1,39 +1,41 @@
-from helpers.handlers.apps_names import applications, get_app_name
+import json
+from helpers.handlers.apps_names import applications, get_app_name, get_technical_app_name
 from scripts.redis_connection import redis_db
 from helpers.constants.definitions import APP_FILE, URL
 
 
-def apps_trf():
+def apps_trf(target_app=""):
     """
-    @return app_list (list[dict])       : list of all app inf with traffic as a dictionary
+    @param target_app (str)         : name of the target app, if not given, default value "" [optional]
+    @return app_list  (list[dict])  : list of all app inf with traffic as a dictionary
     """
-    # Initialize an empty list to store matching hash keys
-    # Dictionary to store the most recent digest object for each app_name
-    app_last_seen = {}  # {"netify.x_app_name":123456789 (unix of last time of app)}
+    app_list = {}
     applications_list = applications(APP_FILE, URL)
-    app_list = []
+    # list to store the app data sorted by the "last_seen" field
+    app_data = []
+    # Retrieve all keys matching the pattern "app:*" or "app:<target_app>:" from Redis
+    app_technical_name = get_technical_app_name(applications_list, target_app) if "" != target_app else "*"
+    all_apps = redis_db.keys(f"app:{app_technical_name}:*")
 
-    all_digests = redis_db.keys("pkt:*")
-
-    for digest in all_digests:
-        current_digest = redis_db.hgetall(digest)
-        app_name = current_digest["app_name"]
-        last_seen = int(current_digest["last_seen"])
-        if app_name in app_last_seen:
-            if last_seen > int(app_last_seen[app_name]["last_seen"]):
-                app_last_seen[app_name] = current_digest
+    for app_key in all_apps:
+        app_name = app_key.split(":")[1]
+        data = json.loads(redis_db.get(app_key))
+        # step 1 : if name not in app list save app name in app list
+        if app_name not in app_list:
+            app_list[app_name] = data
         else:
-            app_last_seen[app_name] = current_digest
+            app_list[app_name].append(data[0])
 
-    apps = list(app_last_seen.values())
-    for app in apps:
-        app_name = get_app_name(applications_list, app['app_name'])
-        total_rate = float(app['rate_up']) + float(app['rate_dn'])
-        app_list.append({
-            "name": app_name,
+    # for every app in app list print all
+    for app_name, app_trf in app_list.items():
+        total_rate = 0
+        for trf in app_trf:
+            total_rate += trf["rate_ttl"]
+        app_data.append({
+            "name": get_app_name(applications_list, app_name),
             "totalRate": total_rate
         })
-        
-    top_apps = sorted(app_list, key=lambda x: x["totalRate"], reverse=True)
-    
+
+    top_apps = sorted(app_data, key=lambda x: x["totalRate"], reverse=True)
+
     return top_apps
