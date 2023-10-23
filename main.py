@@ -9,7 +9,6 @@ from scripts.device_data import device_data
 from scripts.device_traffic import device_recent_trf
 from scripts.redis_connection import redis_db
 from scripts.sys_traffic import system_trf
-from scripts.tcp_parser import tcp_parser
 from scripts.worker import worker
 
 app = Flask(__name__)
@@ -33,7 +32,7 @@ def get_device_by_mac(mac):
     device = device_data(mac)
     dev_trf = device_recent_trf(mac)
     device["apps"] = dev_trf
-    return jsonify(device)
+    return jsonify([device])
 
 
 @app.route("/apps", methods=["GET"])
@@ -45,7 +44,7 @@ def get_top_apps():
 @app.route("/app/<path:app_name>", methods=["GET"])
 def get_app_top_data(app_name):
     app = apps_trf(app_name)
-    return jsonify(app)
+    return jsonify([app])
 
 
 @app.route("/system", methods=["GET"])
@@ -64,23 +63,12 @@ class WorkerThread(threading.Thread):
             worker(out_file)
             os.remove(out_file)
 
-
-class ParserThread(threading.Thread):
-    def run(self):
-        print("[info] : tcp parser thread running...")
-        while True:
-            tcp_parser()
-            pass
-
-
 if __name__ == "__main__":
     th1 = WorkerThread()
-    th2 = ParserThread()
     th1.start()
-    # th2.start()
     app.run(
         host="localhost",
         port=6000,
         debug=True,
-        use_reloader=False,
+        use_reloader=True,
     )
